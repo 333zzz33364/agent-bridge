@@ -1,0 +1,139 @@
+{
+  "_comment": "agent-bridge 能力清单模板。复制为 agents.json 后按本机环境修改。desc 会原样交给调用方模型判断该派给谁。launcher 支持 kind: exe|node|ps1|cmd。",
+  "codex": {
+    "label": "OpenAI Codex CLI",
+    "desc": "擅长实现、重构、跑测试、排查构建问题；能改文件。冷启动慢、成本高，适合「改动大、要动手」的活。",
+    "edits": true,
+    "cost": "high",
+    "avgMinutes": 3,
+    "input": "stdin",
+    "resultSource": "file",
+    "timeoutSec": 900,
+    "launcher": {
+      "win": { "kind": "cmd", "path": "codex" },
+      "posix": { "kind": "cmd", "path": "codex" }
+    },
+    "env": {},
+    "argv": {
+      "read": [
+        "exec", "-s", "read-only", "--skip-git-repo-check",
+        "-C", "{cwd}", "-o", "{out}", "-"
+      ],
+      "write": [
+        "exec", "-s", "workspace-write", "--skip-git-repo-check",
+        "-C", "{cwd}", "-o", "{out}", "-"
+      ]
+    }
+  },
+  "claude": {
+    "label": "Claude Code",
+    "desc": "擅长阅读、代码审查、写文档、单点修改和一致性检查；适合「给我第二个视角」和「验收别人改的东西」。成本中等。",
+    "edits": true,
+    "cost": "mid",
+    "avgMinutes": 2,
+    "input": "stdin",
+    "resultSource": "stdout",
+    "timeoutSec": 900,
+    "launcher": {
+      "win": { "kind": "cmd", "path": "claude" },
+      "posix": { "kind": "cmd", "path": "claude" }
+    },
+    "env": {},
+    "argv": {
+      "read": ["-p", "--permission-mode", "plan", "--output-format", "text"],
+      "write": ["-p", "--permission-mode", "acceptEdits", "--output-format", "text"]
+    }
+  },
+  "cmdc": {
+    "label": "Command Code",
+    "desc": "擅长按已积累的代码口味做增量修改；成本最低，适合小范围、明确的改动。",
+    "edits": true,
+    "cost": "low",
+    "avgMinutes": 2,
+    "input": "argv",
+    "resultSource": "stdout",
+    "timeoutSec": 600,
+    "launcher": {
+      "win": { "kind": "cmd", "path": "cmdc" },
+      "posix": { "kind": "cmd", "path": "cmd" }
+    },
+    "env": {},
+    "argv": {
+      "read": ["-p", "--permission-mode", "plan", "--output-format", "text"],
+      "write": ["-p", "--permission-mode", "accept-edits", "--output-format", "text"]
+    }
+  },
+  "dsh": {
+    "label": "DeepSeek Harness · DeepSeek V4.1 Flash (cmdc)",
+    "desc": "通过 DSH SDK JSON-RPC 运行，固定模型 cmdc / deepseek/deepseek-v4.1-flash（reasoningEffort: high）。read 模式支持读文件、读图、搜文件与跑终端命令验证；显式 write 和 cwd 才能在获准目录内编辑文本。已取消 5 分钟硬超时，改为连续 15 分钟无新事件/输出判定卡死，支持 start_agent 异步巡检及通过 sessionId 进行多轮上下文接力。",
+    "edits": true,
+    "writeRoots": [
+      "C:\\path\\to\\your-workspace"
+    ],
+    "cost": "low",
+    "avgMinutes": 2,
+    "input": "stdin",
+    "resultSource": "stdout",
+    "timeoutSec": 7200,
+    "noHardTimeout": true,
+    "idleTimeoutSec": 900,
+    "supportsSession": true,
+    "launcher": {
+      "win": {
+        "kind": "node",
+        "path": "C:\\path\\to\\agent-bridge\\dsh-jsonrpc.mjs"
+      }
+    },
+    "argv": {
+      "read": [
+        "--provider",
+        "cmdc",
+        "--model",
+        "deepseek/deepseek-v4.1-flash"
+      ],
+      "write": [
+        "--provider",
+        "cmdc",
+        "--model",
+        "deepseek/deepseek-v4.1-flash",
+        "--mode",
+        "write",
+        "--write-root",
+        "{cwd}"
+      ]
+    }
+  },
+  "antigravity": {
+    "label": "Google Antigravity CLI · Gemini 3.8 Flash",
+    "desc": "通过 agy 后台运行，固定模型 Gemini 3.8 Flash（Medium）。默认只读，显式 write 和 cwd 才能在获准目录内编辑文本。",
+    "edits": true,
+    "writeRoots": [
+      "C:\\path\\to\\your-workspace"
+    ],
+    "cost": "low",
+    "avgMinutes": 2,
+    "input": "stdin",
+    "resultSource": "stdout",
+    "timeoutSec": 180,
+    "launcher": {
+      "win": {
+        "kind": "node",
+        "path": "C:\\path\\to\\agent-bridge\\agy-runner.mjs"
+      }
+    },
+    "argv": {
+      "read": [
+        "--model",
+        "gemini-3.8-flash-medium"
+      ],
+      "write": [
+        "--model",
+        "gemini-3.8-flash-medium",
+        "--mode",
+        "write",
+        "--write-root",
+        "{cwd}"
+      ]
+    }
+  }
+}
